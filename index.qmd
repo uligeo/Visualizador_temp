@@ -1,0 +1,111 @@
+---
+title: "Dashboard de Análisis de Cambio de Temperatura"
+format: dashboard
+---
+
+# Mapa de temperaturas
+
+```{r setup}
+#| include: false
+# Cargar las bibliotecas necesarias
+library(terra) # Manejo de datos ráster
+library(leaflet) # Mapas interactivos
+library(leaflet.extras) # Complementos para Leaflet
+library(htmltools) # Manipulación de contenido HTML
+library(RColorBrewer) # Paletas de colores
+
+# Cargar los rásteres
+tempr2023 <- rast('archivos/LST_Landsat-2.tif') # Temperatura de 2023
+tempr2014 <- rast('archivos/LST_Landsat2014.tif') # Temperatura de 2014
+
+# Reescalar los rásteres para mejor rendimiento
+tempr2023_resampled <- aggregate(tempr2023, fact = 2) # Reduce la resolución
+tempr2014_resampled <- aggregate(tempr2014, fact = 2)
+
+# Definir rango global para la paleta de colores
+global_min <- 25  # Valor mínimo
+global_max <- 40  # Valor máximo
+
+# Ajustar ambos rásteres al rango definido
+tempr2023_resampled <- clamp(tempr2023_resampled, lower = global_min, upper = global_max, values = TRUE)
+tempr2014_resampled <- clamp(tempr2014_resampled, lower = global_min, upper = global_max, values = TRUE)
+
+# Calcular la diferencia de temperatura
+temperature_difference <- tempr2023_resampled - tempr2014_resampled
+
+# Definir paletas de colores
+shared_colors <- colorNumeric(palette = rev(brewer.pal(11, "Spectral")), 
+                               domain = c(global_min, global_max), 
+                               na.color = "transparent")
+
+diff_palette <- colorNumeric(palette = c("blue", "white", "red"), 
+                              domain = c(-10, 10), 
+                              na.color = "transparent")
+
+# Estadísticas resumidas
+mean_2014 <- mean(values(tempr2014_resampled), na.rm = TRUE)
+mean_2023 <- mean(values(tempr2023_resampled), na.rm = TRUE)
+mean_diff <- mean(values(temperature_difference), na.rm = TRUE)
+
+```
+
+
+
+
+```{r}
+# Inicializar el mapa
+map <- leaflet() %>%
+  addTiles()
+
+# Agregar capa de Temperatura 2023 si está activada
+
+  map <- map %>%
+    addRasterImage(tempr2023_resampled, 
+                   colors = shared_colors, 
+                   opacity = 0.8, 
+                   group = "Temperatura 2023") %>%
+    addLegend(pal = shared_colors, 
+              values = c(global_min, global_max), 
+              title = "Temperatura 2023 (°C)",
+              group = "Temperatura 2023")
+
+# Agregar capa de Temperatura 2014 si está activada
+
+  map <- map %>%
+    addRasterImage(tempr2014_resampled, 
+                   colors = shared_colors, 
+                   opacity = 0.8, 
+                   group = "Temperatura 2014") %>%
+    addLegend(pal = shared_colors, 
+              values = c(global_min, global_max), 
+              title = "Temperatura 2014 (°C)",
+              group = "Temperatura 2014")
+
+
+# Agregar capa de Diferencia de Temperatura si está activada
+
+  map <- map %>%
+    addRasterImage(temperature_difference, 
+                   colors = diff_palette, 
+                   opacity = 0.8, 
+                   group = "Diferencia de Temperatura") %>%
+    addLegend(pal = diff_palette, 
+              values = c(-10, 10), 
+              title = "Diferencia de Temperatura (°C)",
+              group = "Diferencia de Temperatura")
+
+
+# Finalizar mapa con funciones adicionales
+map <- map %>%
+  addLayersControl(
+    baseGroups = c("Temperatura 2023", "Temperatura 2014", "Diferencia de Temperatura"),
+    options = layersControlOptions(collapsed = FALSE)
+  ) %>%
+  addFullscreenControl() %>%
+  addScaleBar(position = "bottomright")
+
+# Mostrar el mapa
+map
+
+
+```
