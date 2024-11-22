@@ -12,7 +12,8 @@ library(terra) # Manejo de datos ráster
 library(leaflet) # Mapas interactivos
 library(leaflet.extras) # Complementos para Leaflet
 library(htmltools) # Manipulación de contenido HTML
-library(RColorBrewer) # Paletas de colores
+library(RColorBrewer)
+library(magrittr) # Paletas de colores
 
 # Cargar los rásteres
 tempr2023 <- rast('archivos/LST_Landsat-2.tif') # Temperatura de 2023
@@ -59,7 +60,7 @@ map <- leaflet() %>%
 
 # Agregar capa de Temperatura 2023 si está activada
 
-  map <- map %>%
+  map1 <- map %>%
     addRasterImage(tempr2023_resampled, 
                    colors = shared_colors, 
                    opacity = 0.8, 
@@ -69,9 +70,14 @@ map <- leaflet() %>%
               title = "Temperatura 2023 (°C)",
               group = "Temperatura 2023")
 
+map1
+
+```
+
+```{r}
 # Agregar capa de Temperatura 2014 si está activada
 
-  map <- map %>%
+  map2 <- map %>%
     addRasterImage(tempr2014_resampled, 
                    colors = shared_colors, 
                    opacity = 0.8, 
@@ -82,9 +88,17 @@ map <- leaflet() %>%
               group = "Temperatura 2014")
 
 
-# Agregar capa de Diferencia de Temperatura si está activada
+#
+map2
+# Finalizar mapa con funciones adicionales
+```
 
-  map <- map %>%
+# Mapa de diferencias
+
+```{r}
+
+
+  map3 <- map %>%
     addRasterImage(temperature_difference, 
                    colors = diff_palette, 
                    opacity = 0.8, 
@@ -94,18 +108,6 @@ map <- leaflet() %>%
               title = "Diferencia de Temperatura (°C)",
               group = "Diferencia de Temperatura")
 
-
-# Finalizar mapa con funciones adicionales
-map <- map %>%
-  addLayersControl(
-    baseGroups = c("Temperatura 2023", "Temperatura 2014", "Diferencia de Temperatura"),
-    options = layersControlOptions(collapsed = FALSE)
-  ) %>%
-  addFullscreenControl() %>%
-  addScaleBar(position = "bottomright")
-
-# Mostrar el mapa
-map
-
+ map3             
 
 ```
